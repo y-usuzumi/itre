@@ -1,12 +1,7 @@
-use std::io;
-use std::convert;
+use std;
 
+#[derive(Debug)]
 pub enum Error {
-    
-}
-
-impl convert::From<io::Error> for Error {
-    fn from(_: io::Error) -> Self {
-        panic!("Not implemented")
-    }
+    InvalidTypeCode(u8),
+    IOError(std::io::Error)
 }

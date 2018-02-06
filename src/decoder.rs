@@ -1,6 +1,6 @@
 use std;
 use std::str;
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read};
 use bytes::{BytesMut};
 use byteorder::{BigEndian, ReadBytesExt};
 use super::{Message};
