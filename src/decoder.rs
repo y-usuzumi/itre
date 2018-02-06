@@ -8,7 +8,7 @@ use super::error::Error;
 
 use super::consts;
 
-type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 pub trait Decoder {
     fn decode_from(buf: &mut BytesMut) -> Result<Self> where Self: Sized;
