@@ -26,12 +26,12 @@
 //!   Text:
 //!     <pre>
 //!         |Total text length|Text content|
-//!         | 4 bytes         | ...        |
+//!         | 2 bytes         | ...        |
 //!     </pre>
-//!     However, if the total text length is greater than 4294967294 (2^32-2),
+//!     However, if the total text length is greater than 65534 (2^16-2),
 //!     the encoding result will be:
 //!     <pre>
-//!         | 2^32-1 | the type-specific encoding of the first 2^32-2 bytes
+//!         | 2^16-1 | the type-specific encoding of the first 2^16-2 bytes
 //!     </pre>
 //!     followed by:
 //!     <pre>
@@ -74,7 +74,7 @@ pub mod decoder;
 pub mod error;
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Emo {
     Nop,             // 0
     Laugh,           // 1
@@ -83,7 +83,7 @@ pub enum Emo {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Message {
     Nop,                    // 0
     Text(String),           // 128

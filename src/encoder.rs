@@ -11,12 +11,31 @@ impl Encoder for String {
     fn encode_into(&mut self, buf: &mut BytesMut) {
         let len = self.len();
         if len > consts::TEXT_SLICE_MAX_LENGTH_S {
-            buf.put_u32::<BigEndian>(consts::TEXT_OVERFLOW_FLAG);
-            buf.extend(self[..consts::TEXT_SLICE_MAX_LENGTH_S-1].bytes());
+            buf.put_u16::<BigEndian>(consts::TEXT_OVERFLOW_FLAG);
+            buf.extend(self[..consts::TEXT_SLICE_MAX_LENGTH_S].bytes());
             String::from(&self[consts::TEXT_SLICE_MAX_LENGTH_S..]).encode_into(buf);
         } else {
-            buf.put_u32::<BigEndian>(self.len() as u32);
+            buf.put_u16::<BigEndian>(self.len() as u16);
             buf.extend(self.as_bytes());
+        }
+    }
+}
+
+impl Encoder for Emo {
+    fn encode_into(&mut self, buf: &mut BytesMut) {
+        match *self {
+            Emo::Nop => {
+                buf.put_u8(consts::MESSAGE_EMO_CODE_NOP);
+            },
+            Emo::Laugh => {
+                buf.put_u8(consts::MESSAGE_EMO_CODE_LAUGH);
+            },
+            Emo::Cry => {
+                buf.put_u8(consts::MESSAGE_EMO_CODE_CRY);
+            },
+            Emo::Custom(_) => {
+                panic!("Not implemented yet");
+            }
         }
     }
 }
@@ -25,18 +44,17 @@ impl Encoder for Message {
     fn encode_into(&mut self, buf: &mut BytesMut) {
         // Type code
         buf.put_u8(match *self {
-            Message::Nop => consts::MESSAGE_NOP_TYPE_CODE,
-            Message::Text(_) => consts::MESSAGE_TEXT_TYPE_CODE,
-            Message::Emo(_) => consts::MESSAGE_EMO_TYPE_CODE,
-            Message::Image(_, _) => consts::MESSAGE_IMAGE_TYPE_CODE,
-            Message::Compound(_) => consts::MESSAGE_COMPOUND_TYPE_CODE,
+            Message::Nop => consts::MESSAGE_TYPE_CODE_NOP,
+            Message::Text(_) => consts::MESSAGE_TYPE_CODE_TEXT,
+            Message::Emo(_) => consts::MESSAGE_TYPE_CODE_EMO,
+            Message::Image(_, _) => consts::MESSAGE_TYPE_CODE_IMAGE,
+            Message::Compound(_) => consts::MESSAGE_TYPE_CODE_COMPOUND,
         });
         match *self {
             Message::Text(ref mut t) => t.encode_into(buf),
             Message::Emo(ref mut e) => e.encode_into(buf),
-            Message::Image(t, ref d) => {
-                buf.put_u8(t);
-                buf.extend(d);
+            Message::Image(_, _) => {
+                panic!("Not implemented yet");
             },
             Message::Compound(ref mut msgs) => {
                 let len = msgs.len();
@@ -65,25 +83,6 @@ impl Encoder for Message {
     }
 }
 
-impl Encoder for Emo {
-    fn encode_into(&mut self, buf: &mut BytesMut) {
-        match *self {
-            Emo::Nop => {
-                buf.put_u8(0);
-            },
-            Emo::Laugh => {
-                buf.put_u8(1);
-            },
-            Emo::Cry => {
-                buf.put_u8(2);
-            },
-            Emo::Custom(_) => {
-                panic!("Not implemented yet");
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use bytes::BytesMut;
@@ -98,7 +97,7 @@ mod tests {
             // 1 byte type (Text: 128)
             // 4 byte text length 0005
             // 5 byte Hello
-            assert_eq!(&buf[..], b"\x80\x00\x00\x00\x05Hello");
+            assert_eq!(&buf[..], b"\x80\x00\x05Hello");
         }
     }
 
@@ -144,8 +143,8 @@ mod tests {
         msg.encode_into(&mut buf);
         assert_eq!(&buf[..], b"\
         \xfa\x03\
-        \x80\x00\x00\x00\x05Hello\
+        \x80\x00\x05Hello\
         \x82\x01\
-        \x80\x00\x00\x00\x06world!");
+        \x80\x00\x06world!");
     }
 }
