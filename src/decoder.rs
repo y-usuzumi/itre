@@ -3,10 +3,9 @@ use std::str;
 use std::io::{Cursor, Read};
 use bytes::{BytesMut};
 use byteorder::{BigEndian, ReadBytesExt};
+use super::consts;
 use super::{Message};
 use super::error::Error;
-
-use super::consts;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
