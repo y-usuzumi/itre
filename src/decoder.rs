@@ -45,7 +45,7 @@ impl Decoder for Emo {
             consts::MESSAGE_EMO_CODE_CRY => Emo::Cry,
             _ => return Err(Error::InvalidEmoCode(emo_code))
         };
-        Ok(msg)
+        return Ok(msg);
     }
 }
 
@@ -85,7 +85,7 @@ impl Decoder for Message {
             },
             _ => return Err(Error::InvalidTypeCode(type_code))
         };
-        Ok(msg)
+        return Ok(msg);
     }
 }
 

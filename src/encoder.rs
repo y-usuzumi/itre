@@ -4,11 +4,11 @@ use super::consts;
 use super::{Message, Emo};
 
 pub trait Encoder {
-    fn encode_into(&mut self, buf: &mut BytesMut);
+    fn encode_into(&self, buf: &mut BytesMut);
 }
 
 impl Encoder for String {
-    fn encode_into(&mut self, buf: &mut BytesMut) {
+    fn encode_into(&self, buf: &mut BytesMut) {
         let len = self.len();
         if len > consts::TEXT_SLICE_MAX_LENGTH_S {
             buf.put_u16::<BigEndian>(consts::TEXT_OVERFLOW_FLAG);
@@ -22,7 +22,7 @@ impl Encoder for String {
 }
 
 impl Encoder for Emo {
-    fn encode_into(&mut self, buf: &mut BytesMut) {
+    fn encode_into(&self, buf: &mut BytesMut) {
         match *self {
             Emo::Nop => {
                 buf.put_u8(consts::MESSAGE_EMO_CODE_NOP);
@@ -41,34 +41,34 @@ impl Encoder for Emo {
 }
 
 impl Encoder for Message {
-    fn encode_into(&mut self, buf: &mut BytesMut) {
+    fn encode_into(&self, buf: &mut BytesMut) {
         // Type code
         buf.put_u8(match *self {
             Message::Nop => consts::MESSAGE_TYPE_CODE_NOP,
             Message::Text(_) => consts::MESSAGE_TYPE_CODE_TEXT,
             Message::Emo(_) => consts::MESSAGE_TYPE_CODE_EMO,
-            Message::Image(_, _) => consts::MESSAGE_TYPE_CODE_IMAGE,
+            Message::Image(..) => consts::MESSAGE_TYPE_CODE_IMAGE,
             Message::Compound(_) => consts::MESSAGE_TYPE_CODE_COMPOUND,
         });
         match *self {
-            Message::Text(ref mut t) => t.encode_into(buf),
-            Message::Emo(ref mut e) => e.encode_into(buf),
-            Message::Image(_, _) => {
+            Message::Text(ref t) => t.encode_into(buf),
+            Message::Emo(ref e) => e.encode_into(buf),
+            Message::Image(..) => {
                 panic!("Not implemented yet");
             },
-            Message::Compound(ref mut msgs) => {
+            Message::Compound(ref msgs) => {
                 let len = msgs.len();
                 if len > consts::COMPOUND_SLICE_MAX_LENGTH_S {
                     let mut start = 0;
                     let start_finish_point = len - consts::COMPOUND_SLICE_MAX_LENGTH_S;
                     while start < start_finish_point {
                         buf.put_u8(consts::COMPOUND_OVERFLOW_FLAG);
-                        for msg in &mut msgs[start..start+consts::COMPOUND_SLICE_MAX_LENGTH_S] {
+                        for ref msg in &msgs[start..start+consts::COMPOUND_SLICE_MAX_LENGTH_S] {
                             msg.encode_into(buf);
                         }
                     }
                     buf.put_u8((len - start) as u8);
-                    for msg in &mut msgs[start..] {
+                    for msg in &msgs[start..] {
                         msg.encode_into(buf);
                     }
                 } else {
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn encode_text() {
-        let mut msg = Message::Text(String::from("Hello"));
+        let msg = Message::Text(String::from("Hello"));
         {
             let mut buf = BytesMut::new();
             msg.encode_into(&mut buf);
@@ -104,19 +104,19 @@ mod tests {
     #[test]
     fn encode_emo() {
         {
-            let mut msg = Message::Emo(Emo::Nop);
+            let msg = Message::Emo(Emo::Nop);
             let mut buf = BytesMut::new();
             msg.encode_into(&mut buf);
             assert_eq!(&buf[..], b"\x82\x00");
         }
         {
-            let mut msg = Message::Emo(Emo::Laugh);
+            let msg = Message::Emo(Emo::Laugh);
             let mut buf = BytesMut::new();
             msg.encode_into(&mut buf);
             assert_eq!(&buf[..], b"\x82\x01");
         }
         {
-            let mut msg = Message::Emo(Emo::Cry);
+            let msg = Message::Emo(Emo::Cry);
             let mut buf = BytesMut::new();
             msg.encode_into(&mut buf);
             assert_eq!(&buf[..], b"\x82\x02");
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn encode_compound() {
-        let mut msg = Message::Compound(
+        let msg = Message::Compound(
             vec![
                 Message::Text(String::from("Hello")),
                 Message::Emo(Emo::Laugh),
